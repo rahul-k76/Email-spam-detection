@@ -4,9 +4,23 @@ from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 import streamlit as st
+from pathlib import Path
 
-# Load dataset
-data = pd.read_csv("D:\MLProject\SpamDetection\spam.csv")
+# Load dataset using a relative, deployment-friendly path with uploader fallback
+data_path = Path(__file__).resolve().parent / "spam.csv"
+if data_path.exists():
+    data = pd.read_csv(data_path)
+else:
+    try:
+        data = pd.read_csv("D:\\MLProject\\SpamDetection\\spam.csv")
+    except Exception:
+        st.error(f"Dataset not found at {data_path}. Please upload 'spam.csv'.")
+        upload = st.file_uploader("Upload spam.csv", type=["csv"])
+        if upload is not None:
+            data = pd.read_csv(upload)
+        else:
+            st.stop()
+
 data.drop_duplicates(inplace=True)
 data['Category'] = data['Category'].replace(['ham', 'spam'], ['This is Not Spam', 'This is Spam message'])
 
@@ -36,6 +50,6 @@ def predict(message):
 # Streamlit UI
 st.header('Spam Detection')
 input_mess = st.text_input('Enter Message Here')
-if st.button('Validate'):
+if st.button('SpamCheck'):
     output = predict(input_mess)
     st.markdown(f'**Prediction:** {output}')
